@@ -1,6 +1,19 @@
 #!/bin/bash
 
-#set -x
+set -x
+
+cleanup="true"
+function add_cleanup_action
+{
+    cleanup="$@
+$cleanup"
+}
+
+function cleanup
+{
+    local action
+    echo "$cleanup" | while read action ; do eval $action ; done
+}
 
 function ym_request
 {
@@ -78,6 +91,7 @@ function run_oauth2_server
 }
 
 tmp=`mktemp`
+add_cleanup_action rm -f "$tmp"
 function dz_update_token
 { 
     run_oauth2_server $tmp &
@@ -127,6 +141,10 @@ function do_migrate
     done < "${playlists_queue}"
 }
 
+trap cleanup EXIT
+
+exit 1
+
 cat <<EOF
 You need to create auth file:
 ${PWD}/auth
@@ -141,6 +159,7 @@ EOF
 read USER APP_ID SECRET_KEY <<<`cat ./auth`
 
 playlists_queue="${PWD}/playlists"
+add_cleanup_action rm -f "$playlists_queue"
 
 echo "Read $USER's playlists..."
 ym_get_playlists `ym_request "users/$USER/playlists" ".pageData.playlists[].kind"`
