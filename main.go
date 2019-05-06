@@ -29,6 +29,7 @@ func get_code (w http.ResponseWriter, r *http.Request) {
             fmt.Printf("Can't get token!")
             os.Exit(1)
         }
+	//defer res.Body.Close()
         body, err := ioutil.ReadAll(res.Body)
         var json_body = new(DeezerTokenResponse)
         json.Unmarshal([]byte(body), &json_body)
