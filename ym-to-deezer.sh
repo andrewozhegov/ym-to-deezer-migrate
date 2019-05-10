@@ -143,8 +143,6 @@ function do_migrate
 
 trap cleanup EXIT
 
-exit 1
-
 cat <<EOF
 You need to create auth file:
 ${PWD}/auth
