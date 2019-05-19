@@ -143,7 +143,10 @@ function do_migrate
 
 trap cleanup EXIT
 
-cat <<EOF
+AUTH_FILE="$PWD/auth"
+
+[ -e "${AUTH_FILE}" ] || {
+    cat <<EOF
 You need to create auth file:
 ${PWD}/auth
 <ym_login> <app_id> <secret>
@@ -154,7 +157,8 @@ ${PWD}/auth
 Example:
 echo "andrew.ozhegov 123456 x0234t0wer324wq0xweqr5034wer2x503240x50" > ./auth
 EOF
-read USER APP_ID SECRET_KEY <<<`cat ./auth`
+    exit 1
+}
 
 playlists_queue="${PWD}/playlists"
 add_cleanup_action rm -f "$playlists_queue"
