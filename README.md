@@ -1,18 +1,27 @@
 # ym-to-deezer-migrate
+
 Tool to move your Yandex Music playlists to Deezer
 
-### User Deezer App
+## Prerequisites
+
+- OS: Linux or MacOS
+- perl/curl/vim
+
+## User Deezer App
 
 Go to [Create Deezer App](https://developers.deezer.com/myapps/create) and create your own.
 
-example
+Example:
 
-![deezer app creation](img/Screenshot_20190503_195637.png)
+![](screenshot.png)
 
-### Run
+Get the `Application ID` and `Secret Key`.
 
-```
-git clone https://github.com/andrewozhegov/ym-to-deezer-migrate
-cd ym-to-deezer-migrate
+## Run
+
+1. Generate auth file:
+
+```bash
+echo "MyYandexUser MyAddID MySecretKey" | tee ./auth
 ./ym-to-deezer.sh
 ```

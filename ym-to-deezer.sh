@@ -1,12 +1,22 @@
 #!/bin/bash
 
 set -x
+#set -e
 
 cleanup="true"
+
+if [[ `uname -s` == "Darwin" ]]; then
+    XDG_OPEN="open"
+    GOOS="darwin"
+else
+    XGD_OPEN="xdg-open"
+    GOOS="linux"
+fi
+
 function add_cleanup_action
 {
     cleanup="$@
-$cleanup"
+    $cleanup"
 }
 
 function cleanup
@@ -19,13 +29,13 @@ function ym_request
 {
     local ym_url="$1"
     local json_match="$2"
-    echo `curl -sb -H "Accept: application/json" https://music.yandex.ru/$ym_url | grep -Po '(?<=var Mu=){.*};' | jq -r "${json_match}" 2>/dev/null`
+    echo `curl -sb -H "Accept: application/json" https://music.yandex.ru/$ym_url | perl -nle'print $& while m{(?<=var Mu=){.*};}g' | jq -r "${json_match}" 2>/dev/null`
 }
 
 function ym_get_playlist_name
 {
     local ym_playlist_id="$1"
-    echo `ym_request "users/$USER/playlists/$ym_playlist_id" ".pageData.playlist.title"`
+    echo `ym_request "users/$YM_USER/playlists/$ym_playlist_id" ".pageData.playlist.title"`
 }
 
 function ym_get_track_name
@@ -59,7 +69,7 @@ function ym_get_playlists
 function ym_tracks_list
 {
     local ym_playlist_id="$1"
-    echo `ym_request "users/$USER/playlists/$ym_playlist_id" ".pageData.playlist.tracks[].id"` 
+    echo `ym_request "users/$YM_USER/playlists/$ym_playlist_id" ".pageData.playlist.tracks[].id"` 
 }
 
 function dz_create_playlist
@@ -86,19 +96,17 @@ function dz_find_track
 
 function run_oauth2_server
 {
-    echo "To start local OAuth2 server i need permissions..."
-    sudo ./deezer-auth > $1
+    echo "To start local OAuth2 server I need permissions..."
+    ./deezer-auth > $1
 }
 
-tmp=`mktemp`
-add_cleanup_action rm -f "$tmp"
 function dz_update_token
-{ 
+{
     run_oauth2_server $tmp &
     oauth2_pid="$!"
-    xdg-open "https://connect.deezer.com/oauth/auth.php?app_id=${APP_ID}&redirect_uri=http://localhost&perms=basic_access,manage_library"
+    ${XDG_OPEN} "https://connect.deezer.com/oauth/auth.php?app_id=${APP_ID}&redirect_uri=http://localhost:8080&perms=basic_access,manage_library"
     wait $oauth2_pid
-    TOKEN=`cat $tmp`   
+    TOKEN=`cat $tmp | colrm 52`
 }
 
 function do_migrate
@@ -141,6 +149,9 @@ function do_migrate
     done < "${playlists_queue}"
 }
 
+tmp=`mktemp`
+add_cleanup_action rm -f "$tmp"
+
 trap cleanup EXIT
 
 AUTH_FILE="$PWD/auth"
@@ -155,27 +166,30 @@ ${PWD}/auth
     secret     - 'Secret Key' of created Deezer App
 
 Example:
-echo "andrew.ozhegov 123456 x0234t0wer324wq0xweqr5034wer2x503240x50" > ./auth
+echo "ym_login app_id secret" | tee ./auth
 EOF
     exit 1
 }
 
+YM_USER=`cat ${AUTH_FILE} | cut -f1 -d " "`
+APP_ID=`cat ${AUTH_FILE} | cut -f2 -d " "`
+SECRET_KEY=`cat ${AUTH_FILE} | cut -f3 -d " "`
+
 playlists_queue="${PWD}/playlists"
 add_cleanup_action rm -f "$playlists_queue"
 
-echo "Read $USER's playlists..."
-ym_get_playlists `ym_request "users/$USER/playlists" ".pageData.playlists[].kind"`
+echo "Read $YM_USER's playlists..."
+ym_get_playlists `ym_request "users/$YM_USER/playlists" ".pageData.playlists[].kind"`
 
 echo "Now VIM will be opened with your YM playlists queue."
 echo "Remove playlists that you dont want to backup... <Enter>" ; read
 vim "${playlists_queue}"
 
-echo "Prepearing local OAuth2 server..."
-CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -ldflags "-s -w -X main.APP_ID=${APP_ID} -X main.SECRET_KEY=${SECRET_KEY}" -o deezer-auth
+echo "Preparing local OAuth2 server..."
+CGO_ENABLED=0 GOOS=${GOOS} go build -a -installsuffix cgo -ldflags "-s -w -X main.APP_ID=${APP_ID} -X main.SECRET_KEY=${SECRET_KEY}" -o deezer-auth
 
 echo "Accept authentication..."
 dz_update_token
 
-echo "Prepearing done. Let's mirate!"
+echo "Preparing done. Let's migrate!"
 do_migrate
-

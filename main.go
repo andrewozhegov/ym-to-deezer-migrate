@@ -39,6 +39,6 @@ func get_code (w http.ResponseWriter, r *http.Request) {
 
 func main () {
     http.HandleFunc("/", get_code)
-	http.ListenAndServe(":80", nil)
+	http.ListenAndServe(":8080", nil)
 }
 
