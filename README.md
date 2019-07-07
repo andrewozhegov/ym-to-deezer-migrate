@@ -19,8 +19,6 @@ Get the `Application ID` and `Secret Key`.
 
 ## Run
 
-1. Generate auth file:
-
 ```bash
 echo "MyYandexUser MyAddID MySecretKey" | tee ./auth
 ./ym-to-deezer.sh
