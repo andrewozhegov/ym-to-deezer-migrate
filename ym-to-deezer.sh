@@ -1,6 +1,4 @@
-#!/bin/bash
-
-set -x
+#!/bin/bash -ex
 
 cleanup="true"
 
@@ -187,7 +185,7 @@ vim "${playlists_queue}"
 echo "Preparing local OAuth2 server..."
 CGO_ENABLED=0 GOOS=${GOOS} go build -a -installsuffix cgo -ldflags "-s -w -X main.APP_ID=${APP_ID} -X main.SECRET_KEY=${SECRET_KEY}" -o deezer-auth
 
-echo "Accept authentication..."
+echo "Accepting authentication..."
 dz_update_token
 
 echo "Preparing done. Let's migrate!"
